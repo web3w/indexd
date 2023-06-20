@@ -1,16 +1,16 @@
-let debug = require('./debug')('indexd:rpc')
+// let debug = require('./debug')('indexd:rpc')
 
-function rpcd (rpc, method, params, done) {
-  debug(method, params)
+function rpcd(rpc, method, params, done) {
+  // debug(method, params)
   rpc(method, params, (err, result) => {
-    if (err) debug(method, params, err)
+    if (err) console.debug(method, params, err)
     if (err) return done(err)
 
     done(null, result)
   })
 }
 
-function augment (tx) {
+function augment(tx) {
   delete tx.hex
   tx.txId = tx.txid
   delete tx.txid
@@ -32,7 +32,7 @@ function augment (tx) {
   return tx
 }
 
-function block (rpc, blockId, done) {
+export function block(rpc, blockId, done) {
   rpcd(rpc, 'getblock', [blockId, 2], (err, block) => {
     if (err) return done(err)
 
@@ -52,11 +52,11 @@ function block (rpc, blockId, done) {
   })
 }
 
-function blockIdAtHeight (rpc, height, done) {
+export function blockIdAtHeight(rpc, height, done) {
   rpcd(rpc, 'getblockhash', [height], done)
 }
 
-function headerJSON (rpc, blockId, done) {
+export function headerJSON(rpc, blockId, done) {
   rpcd(rpc, 'getblockheader', [blockId, true], (err, header) => {
     if (err) return done(err)
 
@@ -69,11 +69,11 @@ function headerJSON (rpc, blockId, done) {
   })
 }
 
-function mempool (rpc, done) {
+export function mempool(rpc, done) {
   rpcd(rpc, 'getrawmempool', [false], done)
 }
 
-function tip (rpc, done) {
+export function tip(rpc, done) {
   rpcd(rpc, 'getchaintips', [], (err, tips) => {
     if (err) return done(err)
 
@@ -86,7 +86,7 @@ function tip (rpc, done) {
   })
 }
 
-function transaction (rpc, txId, next, forgiving) {
+export function transaction(rpc, txId, next, forgiving) {
   rpcd(rpc, 'getrawtransaction', [txId, true], (err, tx) => {
     if (err) {
       if (forgiving && /No such mempool or blockchain transaction/.test(err)) return next()
@@ -95,13 +95,4 @@ function transaction (rpc, txId, next, forgiving) {
 
     next(null, augment(tx))
   })
-}
-
-module.exports = {
-  block,
-  blockIdAtHeight,
-  headerJSON,
-  mempool,
-  tip,
-  transaction
 }

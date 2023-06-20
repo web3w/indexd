@@ -1,44 +1,47 @@
-let typeforce = require('typeforce')
-let types = require('./types')
-let vstruct = require('varstruct')
+// import { compile, UInt32, Null } from 'typeforce'
+import { tip as _tip,typeforce as typef} from './types.js'
+import vstruct, { Value, UInt8, UInt32BE, UInt32LE } from 'varstruct'
 
 let MTPPREFIX = 0x83
-let MTPTIP = types.tip(MTPPREFIX)
+let MTPTIP = _tip(MTPPREFIX)
 let MTP = {
-  keyType: typeforce.compile({
-    medianTime: typeforce.UInt32,
-    height: typeforce.UInt32
+  keyType: typef.compile({
+    medianTime: typef.UInt32,
+    height: typef.UInt32
   }),
   key: vstruct([
-    ['prefix', vstruct.Value(vstruct.UInt8, MTPPREFIX)],
-    ['medianTime', vstruct.UInt32BE], // big-endian for lexicographical sort
-    ['height', vstruct.UInt32LE]
+    ['prefix', Value(UInt8, MTPPREFIX)],
+    ['medianTime', UInt32BE], // big-endian for lexicographical sort
+    ['height', UInt32LE]
   ]),
-  valueType: typeforce.Null
+  valueType:typef.Null
 }
 
-function MtpIndex () {}
+class MtpIndex {
+  constructor() { }
+  tip(db, callback) {
+    db.get(MTPTIP, {}, callback)
+  }
+  connect(atomic, block) {
+    let { height, medianTime } = block
 
-MtpIndex.prototype.tip = function (db, callback) {
-  db.get(MTPTIP, {}, callback)
+    atomic.put(MTP, { medianTime, height })
+    atomic.put(MTPTIP, {}, block)
+  }
+  disconnect(atomic, block) {
+    let { height, medianTime } = block
+
+    atomic.del(MTP, { medianTime, height })
+    atomic.put(MTPTIP, {}, { blockId: block.prevBlockId, height })
+  }
 }
 
-MtpIndex.prototype.connect = function (atomic, block) {
-  let { height, medianTime } = block
 
-  atomic.put(MTP, { medianTime, height })
-  atomic.put(MTPTIP, {}, block)
-}
 
-MtpIndex.prototype.disconnect = function (atomic, block) {
-  let { height, medianTime } = block
 
-  atomic.del(MTP, { medianTime, height })
-  atomic.put(MTPTIP, {}, { blockId: block.prevBlockId, height })
-}
-
-module.exports = MtpIndex
-module.exports.types = {
+export default MtpIndex
+const _types = {
   data: MTP,
   tip: MTPTIP
 }
+export { _types as types }

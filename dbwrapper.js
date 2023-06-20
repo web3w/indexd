@@ -1,11 +1,13 @@
-//  let debug = require('debug')('db')
-let typeforce = require('typeforce')
+// let debug = require('debug')('db')
+// import typeforce, { typef.maybe, UInt53 } from 'typeforce'
+import { typeforce as typef } from './indexes/types.js'
 let NIL = Buffer.alloc(0)
 
-function atomic () {
+function atomic() {
   let batch = this.batch()
 
-//    debug('atomic')
+  //  debug('atomic')
+  console.log('atomic')
   return {
     del: del.bind(batch),
     put: put.bind(batch),
@@ -13,16 +15,16 @@ function atomic () {
   }
 }
 
-function del (type, key, callback) {
-  typeforce(type.keyType, key)
+function del(type, key, callback) {
+  typef(type.keyType, key)
   key = type.key.encode(key)
 
-//    debug('del', key.length)
+  //    debug('del', key.length)
   return this.del(key, callback)
 }
 
-function get (type, key, callback) {
-  typeforce(type.keyType, key)
+function get(type, key, callback) {
+  typef(type.keyType, key)
   key = type.key.encode(key)
 
   this.get(key, (err, value) => {
@@ -34,24 +36,24 @@ function get (type, key, callback) {
   })
 }
 
-function put (type, key, value, callback) {
-  typeforce(type.keyType, key)
-  typeforce(type.valueType, value)
+function put(type, key, value, callback) {
+  typef(type.keyType, key)
+  typef(type.valueType, value)
 
   key = type.key.encode(key)
   value = type.value ? type.value.encode(value) : NIL
-//    debug('put', key.length, value.length)
+  //    debug('put', key.length, value.length)
 
   return this.put(key, value, callback)
 }
 
-function iterator (type, options, forEach, callback) {
-  typeforce({
-    gt: typeforce.maybe(type.keyType),
-    gte: typeforce.maybe(type.keyType),
-    lt: typeforce.maybe(type.keyType),
-    lte: typeforce.maybe(type.keyType),
-    limit: typeforce.maybe(typeforce.UInt53)
+function iterator(type, options, forEach, callback) {
+  typef({
+    gt: typef.maybe(type.keyType),
+    gte: typef.maybe(type.keyType),
+    lt: typef.maybe(type.keyType),
+    lte: typef.maybe(type.keyType),
+    limit: typef.maybe(typef.UInt53)
   }, options)
 
   // don't mutate
@@ -65,7 +67,7 @@ function iterator (type, options, forEach, callback) {
 
   let iterator = this.iterator(options)
 
-  function loop (err, key, value) {
+  function loop(err, key, value) {
     // NOTE: ignores .end errors, if they occur
     if (err) return iterator.end(() => callback(err))
     if (key === undefined || value === undefined) return iterator.end(callback)
@@ -80,7 +82,7 @@ function iterator (type, options, forEach, callback) {
   iterator.next(loop)
 }
 
-module.exports = function wrap (db) {
+export function dbwrapper(db) {
   return {
     atomic: atomic.bind(db),
     del: del.bind(db),
