@@ -1,5 +1,4 @@
-// let debug = require('debug')('indexd')
-// let debug = require('debug')('indexd')
+
 import { dbwrapper } from './dbwrapper.js'
 import { EventEmitter } from 'events'
 import parallel from 'run-parallel'
@@ -11,6 +10,7 @@ import ScriptIndex from './indexes/script.js'
 import TxIndex from './indexes/tx.js'
 import TxinIndex from './indexes/txin.js'
 import TxoIndex from './indexes/txo.js'
+const debug = console.debug
 
 export const Rpc = (rpcUrl) => {
   return (method, params, callback) => {
@@ -57,7 +57,7 @@ function isConstructor(obj) {
 export class Indexd {
   constructor(db, rpcUrl) {
     this.db = dbwrapper(db)
-    this.rpcUrl =rpcUrl
+    this.rpcUrl = rpcUrl
     this.rpc = Rpc(rpcUrl)
     this.emitter = new EventEmitter() // TODO: bind to this
     this.emitter.setMaxListeners(Infinity)
@@ -133,8 +133,8 @@ export class Indexd {
 
         let atomic = this.db.atomic()
         let events // TODO
-        let { height } = block
-        console.debug(`Connecting ${blockId} @ ${height}`)
+        let { height, transactions } = block
+        console.debug(`Connecting ${blockId} height ${height} txLen ${transactions.length}`)
 
         // connect block to relevant chain tips
         for (let indexName in todo) {
@@ -146,7 +146,7 @@ export class Indexd {
 
         atomic.write((err) => {
           if (err) return callback(err)
-          console.debug(`Connected ${blockId} @ ${height}`)
+          console.debug(`Connected blockId ${blockId} height ${height}`)
 
           let self = this
           function loop(err) {
@@ -161,6 +161,7 @@ export class Indexd {
 
           console.debug(`Connecting ${blockId} (2nd Order)`)
           let atomic2 = this.db.atomic()
+           // TODO: ?? connect2ndOrder
           this.indexes.fee.connect2ndOrder(this.db, this.indexes.txo, atomic2, block, (err) => {
             if (err) return loop(err)
 
@@ -239,14 +240,15 @@ export class Indexd {
       indexd: (f) => this.lowestTip(f)
     }, (err, r) => {
       if (err) return done(err)
-      console.debug('resynchronizing', r)
+      debug('resynchronizing', r)
+      console.log('resynchronizing height:', r.bitcoind.height, r.bitcoind.blockId)
       const { indexd, bitcoind } = r
       // Step 0, genesis?
       if (!indexd) {
-        console.debug('genesis')
+        // console.debug('genesis')
         return blockIdAtHeight(this.rpc, 0, (err, genesisId) => {
           if (err) return done(err)
-
+          debug('genesis 0 ', genesisId)
           this.connectFrom(null, genesisId, done)
         })
       }

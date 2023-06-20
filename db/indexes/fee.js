@@ -97,6 +97,7 @@ class FeeIndex {
       callback()
     })
   }
+  
   disconnect(atomic, block) {
     let { height } = block
 
