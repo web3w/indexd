@@ -67,11 +67,6 @@ class TxIndex {
   }
 }
 
-
-
-
-
-
 export default TxIndex
 const _types = {
   data: TX,

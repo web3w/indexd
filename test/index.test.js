@@ -4,7 +4,8 @@ const btcIndexd = new BitcoinIndexd('./_dist/', 'http://127.0.0.1:18443', 'tcp:/
 
 const foo = btcIndexd.initialize((info) => {
     console.log('btcIndexd', info)
-    btcIndexd.view()
+    // btcIndexd.view()
+    btcIndexd.api()
 })
 
 // btcIndexd.indexd.rpc('getbestblockhash', [], (err, result) => {

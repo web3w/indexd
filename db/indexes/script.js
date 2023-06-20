@@ -5,7 +5,7 @@ import vstruct, { Value, UInt8 as _UInt8, String, UInt32BE, UInt32LE, UInt64LE, 
 import { getOrSetDefault } from './utils.js'
 
 let SCRIPTPREFIX = 0x33
-let SCRIPTTIP = _tip(SCRIPTPREFIX)
+export const SCRIPTTIP = _tip(SCRIPTPREFIX)
 let SCRIPT = {
   keyType: typef.compile({
     scId: typef.HexN(64),
@@ -36,7 +36,7 @@ function sha256 (buffer) {
     .digest('hex')
 }
 
-class ScriptIndex {
+export default class ScriptIndex { 
   constructor() {
     this.scripts = {}
   }
@@ -135,16 +135,9 @@ class ScriptIndex {
   }
 }
 
-
-
-
-
 let ZERO64 = '0000000000000000000000000000000000000000000000000000000000000000'
 let MAX64 = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 
-
-
-export default ScriptIndex
 const _types = {
   data: SCRIPT,
   tip: SCRIPTTIP

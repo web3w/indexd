@@ -1,6 +1,4 @@
-// let debug = require('./debug')('indexd:rpc')
-
-function rpcd(rpc, method, params, done) {
+ function rpcd(rpc, method, params, done) {
   // debug(method, params)
   rpc(method, params, (err, result) => {
     if (err) console.debug(method, params, err)

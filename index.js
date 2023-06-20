@@ -1,23 +1,17 @@
 import leveldown from 'leveldown';
-import levelup from 'levelup';
+// import levelup from 'levelup';
 // const level = require('level-party');
 import { socket } from 'zeromq';
-import { Indexd } from './indexd.js';
+import { Indexd } from './db/indexd.js';
 // let debug = require('debug')('service')
 let debugZmq = console.debug //require('debug')('service:zmq')
 let debugZmqTx = console.debug // require('debug')('service:zmq:tx')
 
-import { createViewerServer } from './viewerserver.js';
-
-// keyEncoding: 'string', valueEncoding: 'json'
-// const db = levelup(encode(leveldown('/Users/liyu/Github/indexd/_dist1'), { keyEncoding: 'buffer', valueEncoding: 'json' })); 
-// const db = levelup(encode(leveldown('/Users/liyu/Github/indexd/_dist'),{ keyEncoding: 'string', keyEncoding:'utf8', valueEncoding: 'json' })); 
-// you may invoke listen...
-// server.close() // ...and close. 
+import { createApiServer, createViewerServer } from './api/index.js';
 
 export class BitcoinIndexd {
   constructor(leveldbFile, rpcUrl, zmqTpc) {
-    this.db = levelup(leveldown(leveldbFile))
+    this.db = leveldown(leveldbFile)
     this.indexd = new Indexd(this.db, rpcUrl)
     this.zmqTpc = zmqTpc
   }
@@ -26,10 +20,13 @@ export class BitcoinIndexd {
     return this.indexd
   }
 
+  api() {
+    createApiServer(this.indexd); // This returns a Node.JS HttpServer.
+  }
+
   view() {
-    // const db =level('/Users/liyu/Github/indexd/_dist')
     const server = createViewerServer(this.db); // This returns a Node.JS HttpServer.
-    server.listen(9090);
+    server.listen(8090);
   }
 
   initialize(callback) {

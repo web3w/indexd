@@ -12,7 +12,7 @@ import TxIndex from './indexes/tx.js'
 import TxinIndex from './indexes/txin.js'
 import TxoIndex from './indexes/txo.js'
 
-const Rpc = (rpcUrl) => {
+export const Rpc = (rpcUrl) => {
   return (method, params, callback) => {
     try {
       const myHeaders = new Headers();
@@ -57,6 +57,7 @@ function isConstructor(obj) {
 export class Indexd {
   constructor(db, rpcUrl) {
     this.db = dbwrapper(db)
+    this.rpcUrl =rpcUrl
     this.rpc = Rpc(rpcUrl)
     this.emitter = new EventEmitter() // TODO: bind to this
     this.emitter.setMaxListeners(Infinity)
@@ -70,6 +71,30 @@ export class Indexd {
     }
     console.log('new Indexd')
   }
+
+  //
+  async walletRpc({ cmdMethod = {}, walletname = '' }) {
+    try {
+      const myHeaders = new Headers();
+      myHeaders.append("Content-Type", "application/json");
+      myHeaders.append('Authorization', 'Basic ' + btoa('test:testpwd'));
+
+      const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: JSON.stringify(cmdMethod)
+      };
+      const url = walletname ? `${this.rpcUrl}/wallet/${walletname}` : this.rpcUrl
+      // console.log(requestOptions)
+      console.log('wallet', url)
+      const req = await fetch(url, requestOptions);
+      return req.json();
+    } catch (e) {
+      console.log('error', e)
+      throw e
+    }
+  }
+
   // get indexd tip
   tips(callback) {
     let tasks = {}
@@ -187,7 +212,7 @@ export class Indexd {
       if (isConstructor(this.indexes[indexName])) {
         new this.indexes[indexName]()
       } else {
-        console.log(indexName)
+        // console.log('clear',indexName)
       }
     }
   }

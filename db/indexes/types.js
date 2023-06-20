@@ -23,4 +23,7 @@ export function tip(prefix) {
   }
 }
 
+
+// console.log(typeforce.HexN(64).toJson())
+
 // export default { tip }

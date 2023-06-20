@@ -7,7 +7,7 @@ function atomic() {
   let batch = this.batch()
 
   //  debug('atomic')
-  console.log('atomic')
+  // console.log('atomic')
   return {
     del: del.bind(batch),
     put: put.bind(batch),

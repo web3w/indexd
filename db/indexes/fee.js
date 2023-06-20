@@ -1,6 +1,6 @@
 import parallel from 'run-parallel'
 // import { compile, UInt32, UInt53 } from 'typeforce'
-import { tip  as _tip,typeforce as typef } from './types.js'
+import { tip as _tip, typeforce as typef } from './types.js'
 import vstruct, { Value, UInt8, UInt32BE, UInt64LE, UInt32LE } from 'varstruct'
 
 let FEEPREFIX = 0x81
@@ -111,12 +111,17 @@ class FeeIndex {
       let { height: maxHeight } = tip
       let results = []
 
+      console.log('maxHeight', maxHeight, maxHeight - (nBlocks - 1))
       db.iterator(FEE, {
         gte: {
           height: maxHeight - (nBlocks - 1)
         },
+        lte:{
+          height: 0xffffffff
+        },
         limit: nBlocks
       }, ({ height }, { fees, size }) => {
+        console.log('latestFeesFor-height',height,size)
         results.push({ height, fees, size })
       }, (err) => callback(err, results))
     })
@@ -124,7 +129,7 @@ class FeeIndex {
 }
 
 
-function box (data) {
+function box(data) {
   if (data.length === 0) return { q1: 0, median: 0, q3: 0 }
   let quarter = (data.length / 4) | 0
   let midpoint = (data.length / 2) | 0

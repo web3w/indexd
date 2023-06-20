@@ -2,37 +2,76 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import { readFile } from 'fs';
 import { Transform } from 'stream';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import Fastify from "fastify";
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import fastifyStatic from '@fastify/static';
+import route1 from './routes/1.js';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-//  { createViewerServer }
+// console.log(__dirname);
 
+
+export function createApiServer(indexd) {
+
+    const app = Fastify({
+        logger: true
+    }) 
+    app.register(fastifyStatic, {
+        root: path.join(__dirname, '../file'),
+        prefix: "/file/"
+    })
+
+    //@ts-ignore
+    app.register(helmet)
+    //@ts-ignore
+    app.register(cors)
+
+    // Declare a route
+    app.get('/', function (request, reply) {
+        reply.send({ hello: 'world' })
+    })
+
+    route1(app, indexd)
+
+    // Run the server!
+    app.listen({ port: 3000 }, function (err, address) {
+        if (err) {
+            app.log.error(err)
+            process.exit(1)
+        }
+        // Server is now listening on ${address}
+    })
+
+    return app
+}
 
 export function createViewerServer(db) {
-    
-    const server = createServer( (request, response)=>{
-    
-        if(request.url.indexOf('/api') === 0) {
+
+    const server = createServer((request, response) => {
+
+        if (request.url.indexOf('/api') === 0) {
             api(request, response, db).catch(console.error);
         } else {
             serveStaticContent(request, response);
         }
-           
+
     });
-    
-    
+
     return server;
-    
 }
 
-
 function serveStaticContent(req, res) {
-    if(req.url === '/' || req.url === '') {
+    if (req.url === '/' || req.url === '') {
         req.url = '/index.html';
-    }    
-    switch(req.url) {
-        case '/index.html':        
+    }
+    switch (req.url) {
+        case '/index.html':
         case '/style.css':
         case '/main.js':
-            readFile(__dirname + '/static' + req.url, (err,data) => {
+            readFile(__dirname + '/static' + req.url, (err, data) => {
                 res.end(data);
             });
             break;
@@ -42,15 +81,13 @@ function serveStaticContent(req, res) {
     }
 }
 
-
-
 async function api(req, res, db) {
     res.setHeader('Content-Type', 'application/json');
     try {
         const reqUrl = parse(req.url, /* parseQueryString: */ true);
-        if(req.method === 'GET') {
-            switch(reqUrl.pathname) {
-                case '/api/query':                    
+        if (req.method === 'GET') {
+            switch (reqUrl.pathname) {
+                case '/api/query':
                     await query(reqUrl, res, db);
                     break;
                 case '/api/value':
@@ -60,8 +97,8 @@ async function api(req, res, db) {
                     res.statusCode = 404;
                     res.end();
             }
-        } 
-    } catch(e) {
+        }
+    } catch (e) {
         res.statusCode = 500;
         res.end();
         throw e;
@@ -71,24 +108,24 @@ async function api(req, res, db) {
 async function query(reqUrl, res, db) {
     const q = reqUrl.query || {};
     if (typeof q.root === 'string') {
-        const limit = parseInt( typeof q.limit === 'string' ? q.limit : -1, 10);
-        db.createKeyStream({gte: q.root, limit: isFinite(limit) ? limit : -1 })
-                .pipe(new Transform(filterByRoot(q.root)))
-                .pipe(new Transform(jsonArrayTransform))
-                .pipe(res);
-        
+        const limit = parseInt(typeof q.limit === 'string' ? q.limit : -1, 10);
+        db.createKeyStream({ gte: q.root, limit: isFinite(limit) ? limit : -1 })
+            .pipe(new Transform(filterByRoot(q.root)))
+            .pipe(new Transform(jsonArrayTransform))
+            .pipe(res);
+
     } else {
         res.end();
-    }    
+    }
 }
 
 
 async function retrieveValue(reqUrl, res, db) {
     const q = reqUrl.query || {};
-    if(q.key) {
+    if (q.key) {
         try {
             res.end(JSON.stringify(await db.get(q.key)));
-        } catch(e) {
+        } catch (e) {
             console.log(e);
             res.statusCode = 404;
             res.end();
@@ -98,15 +135,15 @@ async function retrieveValue(reqUrl, res, db) {
 
 
 function filterByRoot(root = "") {
-    
+
     let commonRoot;
     const start = root.length;
-    
+
     return {
         objectMode: true,
         transform(chunk, _encoding, next) {
-            if(!commonRoot) { // first item always accepted
-                commonRoot = {val: chunk, count: 1};
+            if (!commonRoot) { // first item always accepted
+                commonRoot = { val: chunk, count: 1 };
                 //next(null, commonRoot);
                 next();
                 //console.log('accepted', chunk)
@@ -119,20 +156,20 @@ function filterByRoot(root = "") {
                     next(); // chunk filtered out, it's a child
                 } else { // new group detected                    
                     next(null, chunkValueToString(commonRoot)); // send previous group
-                    commonRoot = { val: chunk, count : 1};
+                    commonRoot = { val: chunk, count: 1 };
                     //console.log('accepted', chunk)
                 }
-            }            
+            }
         },
         flush(done) {
             done(null, chunkValueToString(commonRoot)); // send last
         }
     };
-    
+
 }
 
 function chunkValueToString(chunk) {
-    if(chunk.val instanceof Buffer) {
+    if (chunk.val instanceof Buffer) {
         chunk.val = chunk.val.toString('utf8');
     }
     return chunk;
@@ -141,7 +178,7 @@ function chunkValueToString(chunk) {
 
 function commonRadixIndex(a, b, start) {
     let i = start;
-    for(; i < a.length && i < b.length && a[i] === b[i]; i++);
+    for (; i < a.length && i < b.length && a[i] === b[i]; i++);
     return i - 1;
 }
 
